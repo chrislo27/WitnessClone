@@ -1,0 +1,2 @@
+rootProject.name = "WitnessClone"
+include 'desktop', 'core'
