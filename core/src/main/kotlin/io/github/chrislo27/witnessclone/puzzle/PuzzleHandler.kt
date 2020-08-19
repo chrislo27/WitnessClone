@@ -15,7 +15,6 @@ import com.badlogic.gdx.utils.Disposable
 import io.github.chrislo27.toolboks.registry.AssetRegistry
 import io.github.chrislo27.toolboks.util.MathHelper
 import io.github.chrislo27.toolboks.util.gdxutils.fillRect
-import sun.print.SunMinMaxPage
 import kotlin.math.abs
 import kotlin.math.sign
 import kotlin.math.sqrt
@@ -242,8 +241,10 @@ class PuzzleHandler(val puzzle: Puzzle) : Disposable {
                     if (trace.segmentLimitation == Puzzle.TraceLimit.ENDPOINT && trace.progress == trace.maxProgress) {
                         isTracing = false
                         trace.mutableTraceColor.set(puzzle.traceDoneColor)
-                        // TODO proper success/failure sound
-                        AssetRegistry.get<Sound>(if (MathUtils.randomBoolean()) puzzle.material.success else puzzle.material.failure).play()
+                        // FIXME better validation
+                        val verifier = PuzzleVerifier(puzzle, trace)
+                        verifier.validate()
+                        AssetRegistry.get<Sound>(if (verifier.isValid) puzzle.material.success else puzzle.material.failure).play()
                     } else {
                         cancelTrace()
                     }

@@ -21,7 +21,7 @@ class TestPuzzleScreen(main: WitnessApp) : ToolboksScreen<WitnessApp, TestPuzzle
         update()
     }
 
-    val puzzle = Puzzle(7, 7, material = PuzzleMaterial.GLASS).apply {
+    val puzzle = Puzzle(7, 7, material = PuzzleMaterial.NORMAL).apply {
         vertices[0][0] = Vertex.Startpoint(0, 0)
         vertices[1][1] = Vertex.Startpoint(1, 1)
         vertices[4][3] = Vertex.Startpoint(4, 3)
@@ -58,8 +58,8 @@ class TestPuzzleScreen(main: WitnessApp) : ToolboksScreen<WitnessApp, TestPuzzle
     }
     
     val handler = PuzzleHandler(puzzle)
-    var lastDx = 0f
-    var lastDy = 0f
+    
+    val deltas: MutableList<Float> = mutableListOf(0f, 0f, 0f, 0f, 0f, 0f)
 
     override fun render(delta: Float) {
         Gdx.gl.glClearColor(0f, 0f, 0f, 1f)
@@ -72,9 +72,15 @@ class TestPuzzleScreen(main: WitnessApp) : ToolboksScreen<WitnessApp, TestPuzzle
             if (Gdx.input.isCursorCatched) {
                 val dx = Gdx.input.deltaX * 4f
                 val dy = -1 * Gdx.input.deltaY * 4f
-                lastDx = dx
-                lastDy = dy
-                handler.updateMouse(dx / bufSize, dy / bufSize)
+                while (deltas.size < 4)
+                    deltas.add(0f)
+                deltas.add(dx)
+                deltas.add(dy)
+                while (deltas.size > 6)
+                    deltas.removeAt(0)
+                val avgDx = (deltas[0] + deltas[2] + deltas[4]) / 3f
+                val avgDy = (deltas[1] + deltas[3] + deltas[5]) / 3f
+                handler.updateMouse(avgDx / bufSize, avgDy / bufSize)
             }
             if (Gdx.input.isButtonJustPressed(Input.Buttons.LEFT)) {
                 handler.onClick(Input.Buttons.LEFT, panelMouseX, panelMouseY)
@@ -132,8 +138,7 @@ class TestPuzzleScreen(main: WitnessApp) : ToolboksScreen<WitnessApp, TestPuzzle
     }
 
     override fun getDebugString(): String? {
-        return """dx: $lastDx
-dy: $lastDy
+        return """deltas: $deltas
 ${handler.getDebugString()}
 """
     }
