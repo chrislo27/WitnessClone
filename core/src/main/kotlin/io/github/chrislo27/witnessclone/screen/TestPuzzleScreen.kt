@@ -13,7 +13,7 @@ import io.github.chrislo27.toolboks.util.gdxutils.getInputY
 import io.github.chrislo27.witnessclone.puzzle.Edge
 import io.github.chrislo27.witnessclone.puzzle.EndpointDirection
 import io.github.chrislo27.witnessclone.puzzle.Vertex
-import io.github.chrislo27.witnessclone.puzzle.render.PuzzleHandler
+import io.github.chrislo27.witnessclone.puzzle.PuzzleHandler
 
 
 class TestPuzzleScreen(main: WitnessApp) : ToolboksScreen<WitnessApp, TestPuzzleScreen>(main) {
@@ -35,6 +35,7 @@ class TestPuzzleScreen(main: WitnessApp) : ToolboksScreen<WitnessApp, TestPuzzle
         edgesBottom[3][5] = Edge.Broken(3, 5, false)
         edgesBottom[3][5] = Edge.Broken(3, 5, false)
         vertices[4][5].hasHexagon = true
+        edgesLeft[0][0] = Edge.Broken(0, 0, true)
         edgesLeft[2][1] = Edge.None(2, 1, true)
         edgesLeft[3][1] = Edge.None(3, 1, true)
         edgesLeft[2][3] = Edge.None(2, 3, true)
@@ -55,9 +56,14 @@ class TestPuzzleScreen(main: WitnessApp) : ToolboksScreen<WitnessApp, TestPuzzle
         vertices[this.vertWidth - 1][0] = Vertex.Endpoint(this.vertWidth - 1, 0, EndpointDirection.RIGHT)
         vertices[1][0] = Vertex.Endpoint(1, 0, EndpointDirection.DOWN)
         vertices[0][1] = Vertex.Endpoint(0, 1, EndpointDirection.LEFT)
+        vertices[6][0] = Vertex.Endpoint(6, 0, EndpointDirection.UP)
+        edgesLeft[6][0] = Edge.None(6, 0, true)
         layout()
     }
+    
     val handler = PuzzleHandler(puzzle)
+    var lastDx = 0f
+    var lastDy = 0f
 
     override fun render(delta: Float) {
         Gdx.gl.glClearColor(0f, 0f, 0f, 1f)
@@ -66,16 +72,33 @@ class TestPuzzleScreen(main: WitnessApp) : ToolboksScreen<WitnessApp, TestPuzzle
         val bufSize = 600f
         val panelMouseX = (camera.getInputX() - (640f - bufSize / 2f)) / bufSize
         val panelMouseY = (camera.getInputY() - (360f - bufSize / 2f)) / bufSize
-        handler.updateMouse(panelMouseX, panelMouseY)
         if (handler.isTracing) {
+            if (Gdx.input.isCursorCatched) {
+                val dx = Gdx.input.deltaX * 4f
+                val dy = -1 * Gdx.input.deltaY * 4f
+                lastDx = dx
+                lastDy = dy
+                handler.updateMouse(dx / bufSize, dy / bufSize)
+            }
             if (Gdx.input.isButtonJustPressed(Input.Buttons.LEFT)) {
                 handler.onClick(Input.Buttons.LEFT, panelMouseX, panelMouseY)
+                if (!handler.isTracing) {
+                    Gdx.input.isCursorCatched = false
+                    Gdx.input.setCursorPosition(Gdx.graphics.width / 2, Gdx.graphics.height / 2)
+                }
             } else if (Gdx.input.isButtonJustPressed(Input.Buttons.RIGHT)) {
                 handler.onClick(Input.Buttons.RIGHT, panelMouseX, panelMouseY)
+                if (!handler.isTracing) {
+                    Gdx.input.isCursorCatched = false
+                    Gdx.input.setCursorPosition(Gdx.graphics.width / 2, Gdx.graphics.height / 2)
+                }
             }
         } else {
             if (Gdx.input.isButtonJustPressed(Input.Buttons.LEFT)) {
                 handler.onClick(Input.Buttons.LEFT, panelMouseX, panelMouseY)
+                if (handler.isTracing) {
+                    Gdx.input.isCursorCatched = true
+                }
             }
         }
         
@@ -113,7 +136,10 @@ class TestPuzzleScreen(main: WitnessApp) : ToolboksScreen<WitnessApp, TestPuzzle
     }
 
     override fun getDebugString(): String? {
-        return """${handler.getDebugString()}"""
+        return """dx: $lastDx
+dy: $lastDy
+${handler.getDebugString()}
+"""
     }
 
     override fun show() {

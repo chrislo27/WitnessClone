@@ -25,7 +25,7 @@ class Puzzle(val width: Int, val height: Int,
     var lineThickness = 1f
     var gapX = 1f
     var gapY = 1f
-    
+
     var currentTrace: Trace? = null
 
     init {
@@ -48,11 +48,17 @@ class Puzzle(val width: Int, val height: Int,
             for (y in 0 until vertHeight) {
                 if (x < width && y < height) {
                     tiles[x][y].run {
+                        if (this.x != x || this.y != y) {
+                            error("Tile at ($x, $y) has mismatching coordinates of (${this.x}, ${this.y})")
+                        }
                         posX = gap + (gapSizeX / 2) + x * gapSizeX
                         posY = (gap + (gapSizeY / 2) + y * gapSizeY)
                     }
                 }
                 vertices[x][y].run {
+                    if (this.x != x || this.y != y) {
+                        error("Vertex at ($x, $y) has mismatching coordinates of (${this.x}, ${this.y})")
+                    }
                     posX = gap + gapSizeX * x
                     posY = (gap + gapSizeY * y)
                     // Only render the circle tex if 2 or more edges are connected
@@ -77,6 +83,9 @@ class Puzzle(val width: Int, val height: Int,
         for (x in 0 until edgeBottomWidth) {
             for (y in 0 until edgeBottomHeight) {
                 edgesBottom[x][y].run {
+                    if (this.x != x || this.y != y) {
+                        error("Edge bottom at ($x, $y) has mismatching coordinates of (${this.x}, ${this.y})")
+                    }
                     posX = gap + (gapSizeX / 2) + x * gapSizeX
                     posY = (gap + gapSizeY * y)
                     startPosX = gap + gapSizeX * x
@@ -89,6 +98,9 @@ class Puzzle(val width: Int, val height: Int,
         for (x in 0 until edgeLeftWidth) {
             for (y in 0 until edgeLeftHeight) {
                 edgesLeft[x][y].run {
+                    if (this.x != x || this.y != y) {
+                        error("Edge left at ($x, $y) has mismatching coordinates of (${this.x}, ${this.y})")
+                    }
                     posX = (gap + gapSizeX * x)
                     posY = (gap + (gapSizeY / 2) + y * gapSizeY)
                     startPosX = posX
@@ -99,44 +111,70 @@ class Puzzle(val width: Int, val height: Int,
             }
         }
     }
-    
+
     fun getTileOrNull(x: Int, y: Int): Tile? = tiles.getOrNull(x)?.getOrNull(y)
     fun getVertexOrNull(x: Int, y: Int): Vertex? = vertices.getOrNull(x)?.getOrNull(y)
     fun getEdgeBottomOrNull(x: Int, y: Int): Edge? = edgesBottom.getOrNull(x)?.getOrNull(y)
     fun getEdgeLeftOrNull(x: Int, y: Int): Edge? = edgesLeft.getOrNull(x)?.getOrNull(y)
-    
-    inner class Trace(startpoint: Vertex) {
-        /**
-         * The first item is always the startpoint and is always present.
-         */
-        val vertexList: MutableList<Vertex> = mutableListOf(startpoint)
-        var progressDir: TraceDirection = TraceDirection.NONE
+
+    inner class Trace(val startpoint: Vertex) {
+
+        val segmentList: MutableList<Segment> = mutableListOf()
+
+        val lastVertex: Vertex
+            get() = segmentList.lastOrNull()?.end ?: startpoint
+
+        var progressDir: TraceDirection = TraceDirection.UP
+
         /**
          * Measured in units
          */
         var progress: Float = 0f
-        var maxProgress: Float = 1f
+        var maxProgress: Float = if (progressDir.isVertical) this@Puzzle.gapY else this@Puzzle.gapX
+
         /**
-         * Limited = cannot go further once maxProgress is hit
+         * Limited = cannot go further nor branch out once max is hit. NOT_LIMITED if there is a vertex to connect to
          */
-        var isProgressLimited: Boolean = false
-        
+        var segmentLimitation: TraceLimit = TraceLimit.NOT_LIMITED
+        val isSegmentLimited: Boolean
+            get() = segmentLimitation == TraceLimit.NOT_LIMITED
+
         var pointX: Float = startpoint.posX
         var pointY: Float = startpoint.posY
+
     }
-    
+
     enum class TraceDirection(val isVertical: Boolean, val isHorizontal: Boolean, val vectorX: Int, val vectorY: Int) {
-        NONE(false, false, 0, 0),
         UP(true, false, 0, 1), DOWN(true, false, 0, -1),
         LEFT(false, true, -1, 0), RIGHT(false, true, 1, 0);
-        
+
+        val negative: TraceDirection by lazy {
+            when (this) {
+                UP -> DOWN
+                DOWN -> UP
+                LEFT -> RIGHT
+                RIGHT -> LEFT
+            }
+        }
+
         fun isPerpendicularTo(other: TraceDirection): Boolean {
-            if (this == NONE || other == NONE) return false
+//            if (this == NONE || other == NONE) return false
             return this.isVertical != other.isVertical && this.isHorizontal != other.isHorizontal
         }
+
         fun isParallelTo(other: TraceDirection): Boolean {
-            if (this == NONE || other == NONE) return false
+//            if (this == NONE || other == NONE) return false
             return this.isVertical == other.isVertical && this.isHorizontal == other.isHorizontal
         }
+
+        fun isNegativeTo(other: TraceDirection): Boolean {
+            return this.vectorX == -other.vectorX && this.vectorY == -other.vectorY
+        }
+    }
+    
+    enum class TraceLimit {
+        NOT_LIMITED, NOTHING_THERE, ENDPOINT, SELF_INTERSECTION, BROKEN_EDGE
     }
 }
+
+data class Segment(val start: Vertex, val end: Vertex, val edge: Edge, val dir: Puzzle.TraceDirection, val maxProgress: Float)
