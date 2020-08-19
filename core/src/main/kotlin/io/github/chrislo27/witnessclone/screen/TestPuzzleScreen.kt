@@ -5,15 +5,11 @@ import com.badlogic.gdx.Input
 import com.badlogic.gdx.graphics.GL20
 import com.badlogic.gdx.graphics.OrthographicCamera
 import io.github.chrislo27.witnessclone.WitnessApp
-import io.github.chrislo27.witnessclone.puzzle.Puzzle
 import io.github.chrislo27.toolboks.ToolboksScreen
 import io.github.chrislo27.toolboks.util.gdxutils.drawRect
 import io.github.chrislo27.toolboks.util.gdxutils.getInputX
 import io.github.chrislo27.toolboks.util.gdxutils.getInputY
-import io.github.chrislo27.witnessclone.puzzle.Edge
-import io.github.chrislo27.witnessclone.puzzle.EndpointDirection
-import io.github.chrislo27.witnessclone.puzzle.Vertex
-import io.github.chrislo27.witnessclone.puzzle.PuzzleHandler
+import io.github.chrislo27.witnessclone.puzzle.*
 
 
 class TestPuzzleScreen(main: WitnessApp) : ToolboksScreen<WitnessApp, TestPuzzleScreen>(main) {
@@ -25,7 +21,7 @@ class TestPuzzleScreen(main: WitnessApp) : ToolboksScreen<WitnessApp, TestPuzzle
         update()
     }
 
-    val puzzle = Puzzle(7, 7).apply { 
+    val puzzle = Puzzle(7, 7, material = PuzzleMaterial.GLASS).apply {
         vertices[0][0] = Vertex.Startpoint(0, 0)
         vertices[1][1] = Vertex.Startpoint(1, 1)
         vertices[4][3] = Vertex.Startpoint(4, 3)

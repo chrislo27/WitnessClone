@@ -7,7 +7,8 @@ import kotlin.math.max
 class Puzzle(val width: Int, val height: Int,
              val material: PuzzleMaterial = PuzzleMaterial.NORMAL,
              val bgColor: Color = Color.valueOf("828C20"), val lineColor: Color = Color.valueOf("212B27"),
-             val traceColor: Color = Color.valueOf("F3CF0B")) {
+             val traceColor: Color = Color.valueOf("F3CF0B"), val traceDoneColor: Color = Color.valueOf("FFFFFF")) {
+    
     val tileWidth: Int = width
     val tileHeight: Int = height
     val edgeBottomWidth: Int = width
@@ -118,6 +119,8 @@ class Puzzle(val width: Int, val height: Int,
     fun getEdgeLeftOrNull(x: Int, y: Int): Edge? = edgesLeft.getOrNull(x)?.getOrNull(y)
 
     inner class Trace(val startpoint: Vertex) {
+        val mutableTraceColor: Color = traceColor.cpy()
+        var timeWhenGlowStarted: Long = 0L
 
         val segmentList: MutableList<Segment> = mutableListOf()
 
@@ -137,7 +140,7 @@ class Puzzle(val width: Int, val height: Int,
          */
         var segmentLimitation: TraceLimit = TraceLimit.NOT_LIMITED
         val isSegmentLimited: Boolean
-            get() = segmentLimitation == TraceLimit.NOT_LIMITED
+            get() = segmentLimitation != TraceLimit.NOT_LIMITED
 
         var pointX: Float = startpoint.posX
         var pointY: Float = startpoint.posY

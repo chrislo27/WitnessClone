@@ -2,16 +2,20 @@ package io.github.chrislo27.witnessclone.puzzle
 
 import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.Input
+import com.badlogic.gdx.audio.Sound
 import com.badlogic.gdx.graphics.GL20
 import com.badlogic.gdx.graphics.OrthographicCamera
 import com.badlogic.gdx.graphics.Pixmap
 import com.badlogic.gdx.graphics.Texture
 import com.badlogic.gdx.graphics.g2d.SpriteBatch
 import com.badlogic.gdx.graphics.glutils.FrameBuffer
+import com.badlogic.gdx.math.MathUtils
 import com.badlogic.gdx.math.Matrix4
 import com.badlogic.gdx.utils.Disposable
 import io.github.chrislo27.toolboks.registry.AssetRegistry
+import io.github.chrislo27.toolboks.util.MathHelper
 import io.github.chrislo27.toolboks.util.gdxutils.fillRect
+import sun.print.SunMinMaxPage
 import kotlin.math.abs
 import kotlin.math.sign
 import kotlin.math.sqrt
@@ -152,7 +156,10 @@ class PuzzleHandler(val puzzle: Puzzle) : Disposable {
 
         val currentTrace = puzzle.currentTrace
         if (currentTrace != null) {
-            batch.color = puzzle.traceColor
+            if (currentTrace.segmentLimitation == Puzzle.TraceLimit.ENDPOINT && currentTrace.progress == currentTrace.maxProgress && isTracing) {
+                currentTrace.mutableTraceColor.set(puzzle.traceColor).lerp(puzzle.traceDoneColor, MathHelper.getTriangleWave(System.currentTimeMillis() - currentTrace.timeWhenGlowStarted, 0.5f))
+            }
+            batch.color = currentTrace.mutableTraceColor
 
             val startpt = currentTrace.startpoint
             batch.draw(circleTex, startpt.posX - line, startpt.posY - line, line * 2, line * 2)
@@ -206,6 +213,7 @@ class PuzzleHandler(val puzzle: Puzzle) : Disposable {
         println("Cancelled trace")
         puzzle.currentTrace = null
         isTracing = false
+        AssetRegistry.get<Sound>(puzzle.material.abortTracing).play()
     }
 
     fun onClick(button: Int, mouseX: Float, mouseY: Float) {
@@ -222,13 +230,24 @@ class PuzzleHandler(val puzzle: Puzzle) : Disposable {
                     if (pt.second <= puzzle.lineThickness) {
                         isTracing = true
                         puzzle.currentTrace = puzzle.Trace(pt.first)
+                        AssetRegistry.get<Sound>(puzzle.material.startTracing).play(0.9f, MathUtils.random(0.975f, 1.025f), 0f)
                         println("Started trace")
                     }
                 }
             }
         } else {
             if (button == Input.Buttons.LEFT) {
-                // TODO check if on endpoint
+                val trace = puzzle.currentTrace
+                if (trace != null) {
+                    if (trace.segmentLimitation == Puzzle.TraceLimit.ENDPOINT && trace.progress == trace.maxProgress) {
+                        isTracing = false
+                        trace.mutableTraceColor.set(puzzle.traceDoneColor)
+                        // TODO proper success/failure sound
+                        AssetRegistry.get<Sound>(if (MathUtils.randomBoolean()) puzzle.material.success else puzzle.material.failure).play()
+                    } else {
+                        cancelTrace()
+                    }
+                }
             } else if (button == Input.Buttons.RIGHT) {
                 cancelTrace()
             }
@@ -329,6 +348,10 @@ class PuzzleHandler(val puzzle: Puzzle) : Disposable {
                     // trace.progress should go to 0
                     val remaining = trace.progress
                     val totalMomentum = abs(forceX) + abs(forceY)
+                    if (trace.segmentLimitation == Puzzle.TraceLimit.ENDPOINT && remaining == trace.maxProgress) {
+                        trace.mutableTraceColor.set(puzzle.traceColor)
+                        AssetRegistry.get<Sound>(puzzle.material.abortFinishTracing).play(0.5f)
+                    }
                     if (totalMomentum >= remaining) {
                         // Subtract momentum in priority order.
                         if (axis.isVertical) {
@@ -380,6 +403,7 @@ class PuzzleHandler(val puzzle: Puzzle) : Disposable {
                                 forceY -= sign(forceY) * newRemaining
                             }
                         }
+                        val lastProgress = trace.progress
                         trace.progress = trace.maxProgress
                         // Add segment to list if not limited.
                         val lastVert: Vertex = trace.lastVertex
@@ -399,6 +423,9 @@ class PuzzleHandler(val puzzle: Puzzle) : Disposable {
                             trace.segmentList.add(s)
                             trace.progress = 0f
                             // The continue and next iteration will handle the new direction
+                        } else if (trace.segmentLimitation == Puzzle.TraceLimit.ENDPOINT && lastProgress != trace.progress) {
+                            trace.timeWhenGlowStarted = System.currentTimeMillis()
+                            AssetRegistry.get<Sound>(puzzle.material.finishTracing).play(0.5f)
                         }
                         continue
                     } else {
@@ -423,7 +450,8 @@ trace: ${puzzle.currentTrace?.run {
 startpt: (${startpoint.x}, ${startpoint.y})
 segments: ${segmentList.size}
 progressDir: $progressDir
-progress: $progress / $maxProgress ${if (isSegmentLimited) "(lim.)" else ""}
+progress: $progress / $maxProgress
+limit: $segmentLimitation
 point: ($pointX, $pointY)
 """
         }}
