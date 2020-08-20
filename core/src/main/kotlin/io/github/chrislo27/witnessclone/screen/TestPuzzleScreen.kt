@@ -59,9 +59,9 @@ class TestPuzzleScreen(main: WitnessApp) : ToolboksScreen<WitnessApp, TestPuzzle
         edgesBottom[5][4] = Edge.None(5, 4, false)
         edgesBottom[5][5] = Edge.None(5, 5, false)
 
-        edgesBottom[0][this.edgeBottomHeight - 1] = Edge.None(0, this.edgeBottomHeight - 1, false)
-        edgesLeft[6][0] = Edge.None(6, 0, true)
-        vertices[6][0] = Vertex.Endpoint(6, 0, EndpointDirection.UP)
+//        edgesBottom[0][this.edgeBottomHeight - 1] = Edge.None(0, this.edgeBottomHeight - 1, false)
+//        edgesLeft[6][0] = Edge.None(6, 0, true)
+//        vertices[6][0] = Vertex.Endpoint(6, 0, EndpointDirection.UP)
         layout()
     }
 
