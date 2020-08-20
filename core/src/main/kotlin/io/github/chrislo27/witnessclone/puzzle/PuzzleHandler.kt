@@ -9,6 +9,7 @@ import com.badlogic.gdx.graphics.glutils.FrameBuffer
 import com.badlogic.gdx.math.MathUtils
 import com.badlogic.gdx.math.Matrix4
 import com.badlogic.gdx.utils.Disposable
+import io.github.chrislo27.toolboks.Toolboks
 import io.github.chrislo27.toolboks.registry.AssetRegistry
 import io.github.chrislo27.toolboks.util.MathHelper
 import io.github.chrislo27.toolboks.util.gdxutils.fillRect
@@ -214,6 +215,16 @@ class PuzzleHandler(val puzzle: Puzzle) : Disposable {
             batch.draw(circleTex, currentTrace.pointX - halfLine, currentTrace.pointY - halfLine, line, line)
 
             batch.setColor(1f, 1f, 1f, 1f)
+        }
+        
+        if (verif != null && Toolboks.debugMode) {
+            verif.partitions.forEachIndexed { index, partition -> 
+                val c = verif.COLORS[index % verif.COLORS.size]
+                batch.setColor(c.r, c.g, c.b, 0.4f)
+                partition.tiles.forEach { t ->
+                    batch.fillRect(t.posX - puzzle.gapX / 2, t.posY - puzzle.gapY / 2, puzzle.gapX, puzzle.gapY)
+                }
+            }
         }
 
         batch.setColor(1f, 1f, 1f, 1f)

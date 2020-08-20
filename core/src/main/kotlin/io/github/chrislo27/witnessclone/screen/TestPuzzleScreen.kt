@@ -33,35 +33,35 @@ class TestPuzzleScreen(main: WitnessApp) : ToolboksScreen<WitnessApp, TestPuzzle
         vertices[0][0] = Vertex.Startpoint(0, 0)
         vertices[1][1] = Vertex.Startpoint(1, 1)
         vertices[4][3] = Vertex.Startpoint(4, 3)
-        edgesBottom[1][2] = Edge.None(1, 2, false)
-        edgesBottom[1][3] = Edge.None(1, 3, false)
-        edgesBottom[3][4] = Edge.None(3, 4, false)
-        edgesBottom[3][5] = Edge.Broken(3, 5, false)
-        edgesBottom[3][5] = Edge.Broken(3, 5, false)
-        vertices[4][5].hasHexagon = true
-        edgesLeft[0][0] = Edge.Broken(0, 0, true)
-        edgesLeft[2][1] = Edge.None(2, 1, true)
-        edgesLeft[3][1] = Edge.None(3, 1, true)
-        edgesLeft[2][3] = Edge.None(2, 3, true)
-        edgesLeft[3][3] = Edge.None(3, 3, true)
-        edgesLeft[2][5] = Edge.None(2, 5, true)
-        edgesLeft[3][5] = Edge.None(3, 5, true)
-        edgesLeft[1][6] = Edge.Broken(1, 6, true)
-        edgesLeft[2][2].hasHexagon = true
-
-        edgesBottom[5][2] = Edge.None(5, 2, false)
-        edgesBottom[5][3] = Edge.None(5, 3, false)
-        edgesBottom[5][4] = Edge.None(5, 4, false)
-        edgesBottom[5][5] = Edge.None(5, 5, false)
-
-        edgesBottom[0][this.edgeBottomHeight - 1] = Edge.None(0, this.edgeBottomHeight - 1, false)
-
         vertices[this.vertWidth - 1][this.vertHeight - 1] = Vertex.Endpoint(this.vertWidth - 1, this.vertHeight - 1, EndpointDirection.UP)
         vertices[this.vertWidth - 1][0] = Vertex.Endpoint(this.vertWidth - 1, 0, EndpointDirection.RIGHT)
         vertices[1][0] = Vertex.Endpoint(1, 0, EndpointDirection.DOWN)
         vertices[0][1] = Vertex.Endpoint(0, 1, EndpointDirection.LEFT)
-        vertices[6][0] = Vertex.Endpoint(6, 0, EndpointDirection.UP)
-        edgesLeft[6][0] = Edge.None(6, 0, true)
+        
+//        edgesBottom[1][2] = Edge.None(1, 2, false)
+//        edgesBottom[1][3] = Edge.None(1, 3, false)
+//        edgesBottom[3][4] = Edge.None(3, 4, false)
+//        edgesBottom[3][5] = Edge.Broken(3, 5, false)
+//        edgesBottom[3][5] = Edge.Broken(3, 5, false)
+//        vertices[4][5].hasHexagon = true
+//        edgesLeft[0][0] = Edge.Broken(0, 0, true)
+//        edgesLeft[2][1] = Edge.None(2, 1, true)
+//        edgesLeft[3][1] = Edge.None(3, 1, true)
+//        edgesLeft[2][3] = Edge.None(2, 3, true)
+//        edgesLeft[3][3] = Edge.None(3, 3, true)
+//        edgesLeft[2][5] = Edge.None(2, 5, true)
+//        edgesLeft[3][5] = Edge.None(3, 5, true)
+//        edgesLeft[1][6] = Edge.Broken(1, 6, true)
+//        edgesLeft[2][2].hasHexagon = true
+//
+//        edgesBottom[5][2] = Edge.None(5, 2, false)
+//        edgesBottom[5][3] = Edge.None(5, 3, false)
+//        edgesBottom[5][4] = Edge.None(5, 4, false)
+//        edgesBottom[5][5] = Edge.None(5, 5, false)
+//
+//        edgesBottom[0][this.edgeBottomHeight - 1] = Edge.None(0, this.edgeBottomHeight - 1, false)
+//        edgesLeft[6][0] = Edge.None(6, 0, true)
+//        vertices[6][0] = Vertex.Endpoint(6, 0, EndpointDirection.UP)
         layout()
     }
 
