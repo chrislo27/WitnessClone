@@ -6,7 +6,7 @@ import com.badlogic.gdx.graphics.Colors
 
 class PuzzleVerification(val puzzle: Puzzle, val trace: Puzzle.Trace) {
     
-    val errorsTile: Set<Tile> = emptySet()
+    val errorsTile: Set<Tile>
     val errorsEdge: Set<Edge>
     val errorsVertex: Set<Vertex>
     
@@ -105,6 +105,16 @@ class PuzzleVerification(val puzzle: Puzzle, val trace: Puzzle.Trace) {
             isInvalid = true
         errorsEdge = leftoverHexEdge
         errorsVertex = leftoverHexVert
+        errorsTile = mutableSetOf()
+        
+        // Check colour blocks.
+        partitions.forEach { part ->
+            val colourBlocksByColor: Map<ElementColour, List<Tile.ColourBlock>> = part.tiles.filterIsInstance<Tile.ColourBlock>().groupBy { it.elementColour }
+            if (colourBlocksByColor.keys.size >= 2) {
+                errorsTile.addAll(colourBlocksByColor.values.flatten())
+                isInvalid = true
+            }
+        }
         
         isValid = !isInvalid
     }

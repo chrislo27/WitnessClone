@@ -14,6 +14,7 @@ import io.github.chrislo27.toolboks.registry.AssetRegistry
 import io.github.chrislo27.toolboks.util.MathHelper
 import io.github.chrislo27.toolboks.util.gdxutils.fillRect
 import kotlin.math.abs
+import kotlin.math.min
 import kotlin.math.sign
 import kotlin.math.sqrt
 
@@ -34,7 +35,7 @@ class PuzzleHandler(val puzzle: Puzzle) : Disposable {
         update()
     }
     
-    private val tmpHexColor: Color = Color(1f, 1f, 1f, 1f)
+    private val tmpColor: Color = Color(1f, 1f, 1f, 1f)
 
     var isTracing: Boolean = false
     
@@ -109,6 +110,7 @@ class PuzzleHandler(val puzzle: Puzzle) : Disposable {
 
         val circleTex = AssetRegistry.get<Texture>("circle")
         val hexagonTex = AssetRegistry.get<Texture>("panel_hexagon")
+        val roundedRectTex = AssetRegistry.get<Texture>("panel_rect")
         batch.color = puzzle.bgColor
         batch.fillRect(0f, 0f, bufferSizef, bufferSizef)
         batch.color = puzzle.lineColor
@@ -127,9 +129,9 @@ class PuzzleHandler(val puzzle: Puzzle) : Disposable {
                     if (this.hasHexagon) {
                         val w = (endPosX - startPosX)
                         if (verif != null && this in verif.errorsEdge) {
-                            batch.color = tmpHexColor.set(this.hexagonColor).lerp(Color.RED, MathHelper.getTriangleWave(System.currentTimeMillis() - verif.timeVerified, 0.333f))
+                            batch.color = tmpColor.set(this.hexagonColor.color).lerp(Color.RED, MathHelper.getTriangleWave(System.currentTimeMillis() - verif.timeVerified, 0.333f))
                         } else {
-                            batch.color = this.hexagonColor
+                            batch.color = this.hexagonColor.color
                         }
                         batch.draw(hexagonTex, startPosX + w / 2 - halfLine, startPosY - halfLine, line, line)
                         batch.color = puzzle.lineColor
@@ -144,12 +146,27 @@ class PuzzleHandler(val puzzle: Puzzle) : Disposable {
                     if (this.hasHexagon) {
                         val h = (endPosY - startPosY)
                         if (verif != null && this in verif.errorsEdge) {
-                            batch.color = tmpHexColor.set(this.hexagonColor).lerp(Color.RED, MathHelper.getTriangleWave(System.currentTimeMillis() - verif.timeVerified, 0.333f))
+                            batch.color = tmpColor.set(this.hexagonColor.color).lerp(Color.RED, MathHelper.getTriangleWave(System.currentTimeMillis() - verif.timeVerified, 0.333f))
                         } else {
-                            batch.color = this.hexagonColor
+                            batch.color = this.hexagonColor.color
                         }
                         batch.draw(hexagonTex, startPosX - halfLine, startPosY + h / 2f - halfLine, line, line)
                         batch.color = puzzle.lineColor
+                    }
+                }
+            }
+        }
+        for (x in 0 until puzzle.tileWidth) {
+            for (y in 0 until puzzle.tileHeight) {
+                puzzle.tiles[x][y].run { 
+                    if (this is Tile.ColourBlock) {
+                        if (verif != null && this in verif.errorsTile) {
+                            batch.color = tmpColor.set(this.elementColour.color).lerp(Color.RED, MathHelper.getTriangleWave(System.currentTimeMillis() - verif.timeVerified, 0.333f))
+                        } else {
+                            batch.color = this.elementColour.color
+                        }
+                        val size = min(puzzle.gapX, puzzle.gapY) * 0.4f
+                        batch.draw(roundedRectTex, posX - size / 2, posY - size / 2, size, size)
                     }
                 }
             }
@@ -159,9 +176,9 @@ class PuzzleHandler(val puzzle: Puzzle) : Disposable {
                 puzzle.vertices[x][y].run {
                     if (this.hasHexagon) {
                         if (verif != null && this in verif.errorsVertex) {
-                            batch.color = tmpHexColor.set(this.hexagonColor).lerp(Color.RED, MathHelper.getTriangleWave(System.currentTimeMillis() - verif.timeVerified, 0.333f))
+                            batch.color = tmpColor.set(this.hexagonColor.color).lerp(Color.RED, MathHelper.getTriangleWave(System.currentTimeMillis() - verif.timeVerified, 0.333f))
                         } else {
-                            batch.color = this.hexagonColor
+                            batch.color = this.hexagonColor.color
                         }
                         batch.draw(hexagonTex, posX - halfLine, posY - halfLine, line, line)
                         batch.color = puzzle.lineColor
