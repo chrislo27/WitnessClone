@@ -68,7 +68,9 @@ class DefaultAssetLoader : AssetRegistry.IAssetLoader {
         
         AssetRegistry.loadAsset<Texture>("gear", "images/gear.png")
         AssetRegistry.loadAsset<Texture>("circle", "images/circle.png")
-        AssetRegistry.loadAsset<Texture>("hexagon", "images/hexagon.png")
+        AssetRegistry.loadAsset<Texture>("panel_hexagon", "images/panel/hexagon.png")
+        AssetRegistry.loadAsset<Texture>("panel_rect", "images/panel/rounded_rect.png")
+        AssetRegistry.loadAsset<Texture>("panel_scint_ring", "images/panel/scint_ring.png")
     }
     
     override fun addUnmanagedAssets(assets: MutableMap<String, Any>) {        

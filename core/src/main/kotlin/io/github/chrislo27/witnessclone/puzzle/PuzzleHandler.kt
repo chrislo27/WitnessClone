@@ -39,6 +39,9 @@ class PuzzleHandler(val puzzle: Puzzle) : Disposable {
     var isTracing: Boolean = false
     
     private var timeSinceTraceStarted: Float = 0f
+    private var endpointScintTimer: Float = 0f
+    private var endpointScintAnimation: Float = 0f
+    private var endpointScints: Int = 0
 
     private fun Vertex.drawVertex(batch: SpriteBatch, line: Float, halfLine: Float, circleTex: Texture) {
         if (this is Vertex.Startpoint) {
@@ -105,7 +108,7 @@ class PuzzleHandler(val puzzle: Puzzle) : Disposable {
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT)
 
         val circleTex = AssetRegistry.get<Texture>("circle")
-        val hexagonTex = AssetRegistry.get<Texture>("hexagon")
+        val hexagonTex = AssetRegistry.get<Texture>("panel_hexagon")
         batch.color = puzzle.bgColor
         batch.fillRect(0f, 0f, bufferSizef, bufferSizef)
         batch.color = puzzle.lineColor
@@ -161,6 +164,32 @@ class PuzzleHandler(val puzzle: Puzzle) : Disposable {
                             batch.color = this.hexagonColor
                         }
                         batch.draw(hexagonTex, posX - halfLine, posY - halfLine, line, line)
+                        batch.color = puzzle.lineColor
+                    }
+                    if (this is Vertex.Endpoint && isTracing && puzzle.lastVerification == null) {
+                        batch.setColor(1f, 1f, 1f, endpointScintAnimation)
+                        val size = (1f - endpointScintAnimation) * line * 2f
+                        val tex = AssetRegistry.get<Texture>("panel_scint_ring")
+                        when (this.endpointDir) {
+                            EndpointDirection.UP -> {
+                                batch.draw(tex, posX - size / 2, posY - size / 2 + line * 1.5f, size, size)
+                            }
+                            EndpointDirection.DOWN -> {
+                                batch.draw(tex, posX - size / 2, posY - size / 2 - line * 1.5f, size, size)
+                            }
+                            EndpointDirection.LEFT -> {
+                                batch.draw(tex, posX - size / 2 - line * 1.5f, posY - size / 2, size, size)
+                            }
+                            EndpointDirection.RIGHT -> {
+                                batch.draw(tex, posX - size / 2 + line * 1.5f, posY - size / 2, size, size)
+                            }
+                        }
+                        batch.color = puzzle.lineColor
+                    } else if (this is Vertex.Startpoint && !isTracing && puzzle.lastVerification == null) {
+                        batch.setColor(1f, 1f, 1f, endpointScintAnimation)
+                        val size = (1f - endpointScintAnimation) * line * 2f
+                        val tex = AssetRegistry.get<Texture>("panel_scint_ring")
+                        batch.draw(tex, posX - size / 2, posY - size / 2, size, size)
                         batch.color = puzzle.lineColor
                     }
                 }
@@ -241,6 +270,9 @@ class PuzzleHandler(val puzzle: Puzzle) : Disposable {
         println("Cancelled trace")
         puzzle.currentTrace = null
         puzzle.lastVerification = null
+        endpointScintAnimation = 0f
+        endpointScints = 0
+        endpointScintTimer = 0f
         isTracing = false
         AssetRegistry.get<Sound>(puzzle.material.abortTracing).play()
     }
@@ -259,6 +291,9 @@ class PuzzleHandler(val puzzle: Puzzle) : Disposable {
                     if (pt.second <= puzzle.lineThickness) {
                         isTracing = true
                         timeSinceTraceStarted = 0f
+                        endpointScintAnimation = 0f
+                        endpointScintTimer = 0f
+                        endpointScints = 0
                         puzzle.currentTrace = puzzle.Trace(pt.first)
                         puzzle.lastVerification = null
                         AssetRegistry.get<Sound>(puzzle.material.startTracing).play(0.9f, MathUtils.random(0.975f, 1.025f), 0f)
@@ -290,6 +325,20 @@ class PuzzleHandler(val puzzle: Puzzle) : Disposable {
     fun update(delta: Float) {
         if (isTracing) {
             timeSinceTraceStarted += delta
+        }
+
+        if (puzzle.lastVerification == null) {
+            val lastTime = endpointScintTimer
+            endpointScintTimer += delta
+            if (endpointScintAnimation > 0f) {
+                endpointScintAnimation -= delta / 0.5f
+                if (endpointScintAnimation < 0) endpointScintAnimation = 0f
+            }
+            if (lastTime % 2f < 1 && endpointScintTimer % 2f >= 1) {
+                endpointScintAnimation = 1f
+                AssetRegistry.get<Sound>(if (isTracing) puzzle.material.scintEnd else puzzle.material.scintStart).play((1f - endpointScints / 5f).coerceIn(0f, 1f) * 0.15f)
+                endpointScints++
+            }
         }
     }
 
