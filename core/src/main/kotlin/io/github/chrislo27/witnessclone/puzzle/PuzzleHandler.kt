@@ -36,6 +36,8 @@ class PuzzleHandler(val puzzle: Puzzle) : Disposable {
     private val tmpHexColor: Color = Color(1f, 1f, 1f, 1f)
 
     var isTracing: Boolean = false
+    
+    private var timeSinceTraceStarted: Float = 0f
 
     private fun Vertex.drawVertex(batch: SpriteBatch, line: Float, halfLine: Float, circleTex: Texture) {
         if (this is Vertex.Startpoint) {
@@ -245,6 +247,7 @@ class PuzzleHandler(val puzzle: Puzzle) : Disposable {
                     val pt = startpoints.first()
                     if (pt.second <= puzzle.lineThickness) {
                         isTracing = true
+                        timeSinceTraceStarted = 0f
                         puzzle.currentTrace = puzzle.Trace(pt.first)
                         puzzle.lastVerification = null
                         AssetRegistry.get<Sound>(puzzle.material.startTracing).play(0.9f, MathUtils.random(0.975f, 1.025f), 0f)
@@ -270,6 +273,12 @@ class PuzzleHandler(val puzzle: Puzzle) : Disposable {
             } else if (button == Input.Buttons.RIGHT) {
                 cancelTrace()
             }
+        }
+    }
+    
+    fun update(delta: Float) {
+        if (isTracing) {
+            timeSinceTraceStarted += delta
         }
     }
 

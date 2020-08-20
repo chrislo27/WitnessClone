@@ -4,15 +4,21 @@ import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.Input
 import com.badlogic.gdx.graphics.GL20
 import com.badlogic.gdx.graphics.OrthographicCamera
+import com.badlogic.gdx.graphics.glutils.ShaderProgram
 import io.github.chrislo27.witnessclone.WitnessApp
 import io.github.chrislo27.toolboks.ToolboksScreen
 import io.github.chrislo27.toolboks.util.gdxutils.drawRect
 import io.github.chrislo27.toolboks.util.gdxutils.getInputX
 import io.github.chrislo27.toolboks.util.gdxutils.getInputY
 import io.github.chrislo27.witnessclone.puzzle.*
+import org.lwjgl.opengl.GL
 
 
 class TestPuzzleScreen(main: WitnessApp) : ToolboksScreen<WitnessApp, TestPuzzleScreen>(main) {
+
+    companion object {
+        private var mat: PuzzleMaterial = PuzzleMaterial.NORMAL
+    }
 
     val camera = OrthographicCamera().apply {
         setToOrtho(false, 1280f, 720f)
@@ -21,7 +27,9 @@ class TestPuzzleScreen(main: WitnessApp) : ToolboksScreen<WitnessApp, TestPuzzle
         update()
     }
 
-    val puzzle = Puzzle(7, 7, material = PuzzleMaterial.NORMAL).apply {
+    private val crtShader: ShaderProgram = CrtShader.createShader()
+
+    val puzzle = Puzzle(7, 7, material = mat).apply {
         vertices[0][0] = Vertex.Startpoint(0, 0)
         vertices[1][1] = Vertex.Startpoint(1, 1)
         vertices[4][3] = Vertex.Startpoint(4, 3)
@@ -47,7 +55,7 @@ class TestPuzzleScreen(main: WitnessApp) : ToolboksScreen<WitnessApp, TestPuzzle
         edgesBottom[5][5] = Edge.None(5, 5, false)
 
         edgesBottom[0][this.edgeBottomHeight - 1] = Edge.None(0, this.edgeBottomHeight - 1, false)
-        
+
         vertices[this.vertWidth - 1][this.vertHeight - 1] = Vertex.Endpoint(this.vertWidth - 1, this.vertHeight - 1, EndpointDirection.UP)
         vertices[this.vertWidth - 1][0] = Vertex.Endpoint(this.vertWidth - 1, 0, EndpointDirection.RIGHT)
         vertices[1][0] = Vertex.Endpoint(1, 0, EndpointDirection.DOWN)
@@ -56,16 +64,16 @@ class TestPuzzleScreen(main: WitnessApp) : ToolboksScreen<WitnessApp, TestPuzzle
         edgesLeft[6][0] = Edge.None(6, 0, true)
         layout()
     }
-    
+
     val handler = PuzzleHandler(puzzle)
-    
+
     val deltas: MutableList<Float> = mutableListOf(0f, 0f, 0f, 0f, 0f, 0f)
 
     override fun render(delta: Float) {
         Gdx.gl.glClearColor(0f, 0f, 0f, 1f)
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT)
 
-        val bufSize = 700f
+        val bufSize = 680f
         val panelMouseX = (camera.getInputX() - (640f - bufSize / 2f)) / bufSize
         val panelMouseY = (camera.getInputY() - (360f - bufSize / 2f)) / bufSize
         if (handler.isTracing) {
@@ -103,11 +111,11 @@ class TestPuzzleScreen(main: WitnessApp) : ToolboksScreen<WitnessApp, TestPuzzle
                 }
             }
         }
-        
+
         val batch = main.batch
-        
+
         handler.renderToBuffer(batch)
-        
+
         batch.projectionMatrix = camera.combined
         batch.begin()
 
@@ -115,17 +123,28 @@ class TestPuzzleScreen(main: WitnessApp) : ToolboksScreen<WitnessApp, TestPuzzle
         batch.drawRect(0f, 0f, 1280f, 720f, 2f)
 
         batch.setColor(1f, 1f, 1f, 1f)
-        handler.renderBufferTexture(batch, 640f - bufSize / 2f, 360f - bufSize / 2f, bufSize, bufSize)
-        
+
+        if (puzzle.material == PuzzleMaterial.CRT) {
+            batch.shader = crtShader
+            crtShader.setUniformf("CRT_CURVE_AMNTx", 0.25f)
+            crtShader.setUniformf("CRT_CURVE_AMNTy", 0.25f)
+            handler.renderBufferTexture(batch, 640f - bufSize / 2f, 360f - bufSize / 2f, bufSize, bufSize)
+            batch.shader = null
+        } else {
+            handler.renderBufferTexture(batch, 640f - bufSize / 2f, 360f - bufSize / 2f, bufSize, bufSize)
+        }
+
         batch.end()
         batch.projectionMatrix = main.defaultCamera.combined
-        
-        
+
+
         super.render(delta)
     }
 
     override fun renderUpdate() {
         super.renderUpdate()
+
+        handler.update(Gdx.graphics.deltaTime)
         if (Gdx.input.isKeyJustPressed(Input.Keys.L)) {
             puzzle.layout()
         }
@@ -135,10 +154,18 @@ class TestPuzzleScreen(main: WitnessApp) : ToolboksScreen<WitnessApp, TestPuzzle
                 this.dispose()
             }
         }
+        if (Gdx.input.isKeyJustPressed(Input.Keys.M)) {
+            mat = when (mat) {
+                PuzzleMaterial.NORMAL -> PuzzleMaterial.CRT
+                PuzzleMaterial.CRT -> PuzzleMaterial.GLASS
+                PuzzleMaterial.GLASS -> PuzzleMaterial.NORMAL
+            }
+        }
     }
 
     override fun getDebugString(): String? {
         return """deltas: $deltas
+material: $mat
 ${handler.getDebugString()}
 """
     }
@@ -151,6 +178,7 @@ ${handler.getDebugString()}
 
     override fun dispose() {
         handler.dispose()
+        crtShader.dispose()
     }
 
 }
