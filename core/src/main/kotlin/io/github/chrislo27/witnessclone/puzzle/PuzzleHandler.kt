@@ -3,10 +3,7 @@ package io.github.chrislo27.witnessclone.puzzle
 import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.Input
 import com.badlogic.gdx.audio.Sound
-import com.badlogic.gdx.graphics.GL20
-import com.badlogic.gdx.graphics.OrthographicCamera
-import com.badlogic.gdx.graphics.Pixmap
-import com.badlogic.gdx.graphics.Texture
+import com.badlogic.gdx.graphics.*
 import com.badlogic.gdx.graphics.g2d.SpriteBatch
 import com.badlogic.gdx.graphics.glutils.FrameBuffer
 import com.badlogic.gdx.math.MathUtils
@@ -35,6 +32,8 @@ class PuzzleHandler(val puzzle: Puzzle) : Disposable {
         setToOrtho(false, 1f, 1f)
         update()
     }
+    
+    private val tmpHexColor: Color = Color(1f, 1f, 1f, 1f)
 
     var isTracing: Boolean = false
 
@@ -109,6 +108,7 @@ class PuzzleHandler(val puzzle: Puzzle) : Disposable {
         batch.color = puzzle.lineColor
         val line = puzzle.lineThickness
         val halfLine = line / 2f
+        val verif = puzzle.lastVerification
         for (x in 0 until puzzle.vertWidth) {
             for (y in 0 until puzzle.vertHeight) {
                 puzzle.vertices[x][y].drawVertex(batch, line, halfLine, circleTex)
@@ -120,7 +120,11 @@ class PuzzleHandler(val puzzle: Puzzle) : Disposable {
                     drawBottomEdge(batch, line, halfLine)
                     if (this.hasHexagon) {
                         val w = (endPosX - startPosX)
-                        batch.color = this.hexagonColor
+                        if (verif != null && this in verif.errorsEdge) {
+                            batch.color = tmpHexColor.set(this.hexagonColor).lerp(Color.RED, MathHelper.getTriangleWave(System.currentTimeMillis() - verif.timeVerified, 0.333f))
+                        } else {
+                            batch.color = this.hexagonColor
+                        }
                         batch.draw(hexagonTex, startPosX + w / 2 - halfLine, startPosY - halfLine, line, line)
                         batch.color = puzzle.lineColor
                     }
@@ -133,7 +137,11 @@ class PuzzleHandler(val puzzle: Puzzle) : Disposable {
                     drawLeftEdge(batch, line, halfLine)
                     if (this.hasHexagon) {
                         val h = (endPosY - startPosY)
-                        batch.color = this.hexagonColor
+                        if (verif != null && this in verif.errorsEdge) {
+                            batch.color = tmpHexColor.set(this.hexagonColor).lerp(Color.RED, MathHelper.getTriangleWave(System.currentTimeMillis() - verif.timeVerified, 0.333f))
+                        } else {
+                            batch.color = this.hexagonColor
+                        }
                         batch.draw(hexagonTex, startPosX - halfLine, startPosY + h / 2f - halfLine, line, line)
                         batch.color = puzzle.lineColor
                     }
@@ -144,7 +152,11 @@ class PuzzleHandler(val puzzle: Puzzle) : Disposable {
             for (y in 0 until puzzle.vertHeight) {
                 puzzle.vertices[x][y].run {
                     if (this.hasHexagon) {
-                        batch.color = this.hexagonColor
+                        if (verif != null && this in verif.errorsVertex) {
+                            batch.color = tmpHexColor.set(this.hexagonColor).lerp(Color.RED, MathHelper.getTriangleWave(System.currentTimeMillis() - verif.timeVerified, 0.333f))
+                        } else {
+                            batch.color = this.hexagonColor
+                        }
                         batch.draw(hexagonTex, posX - halfLine, posY - halfLine, line, line)
                         batch.color = puzzle.lineColor
                     }
@@ -155,8 +167,12 @@ class PuzzleHandler(val puzzle: Puzzle) : Disposable {
 
         val currentTrace = puzzle.currentTrace
         if (currentTrace != null) {
-            if (currentTrace.segmentLimitation == Puzzle.TraceLimit.ENDPOINT && currentTrace.progress == currentTrace.maxProgress && isTracing) {
-                currentTrace.mutableTraceColor.set(puzzle.traceColor).lerp(puzzle.traceDoneColor, MathHelper.getTriangleWave(System.currentTimeMillis() - currentTrace.timeWhenGlowStarted, 0.5f))
+            if (currentTrace.segmentLimitation == Puzzle.TraceLimit.ENDPOINT && currentTrace.progress == currentTrace.maxProgress) {
+                if (isTracing) {
+                    currentTrace.mutableTraceColor.set(puzzle.traceColor).lerp(puzzle.traceDoneColor, MathHelper.getTriangleWave(System.currentTimeMillis() - currentTrace.timeWhenGlowStarted, 0.5f))
+                } else if (verif != null && !verif.isValid) {
+                    currentTrace.mutableTraceColor.set(puzzle.traceColor).lerp(puzzle.lineColor, ((System.currentTimeMillis() - verif.timeVerified) / 10000f).coerceIn(0f, 1f))
+                }
             }
             batch.color = currentTrace.mutableTraceColor
 
@@ -211,6 +227,7 @@ class PuzzleHandler(val puzzle: Puzzle) : Disposable {
     fun cancelTrace() {
         println("Cancelled trace")
         puzzle.currentTrace = null
+        puzzle.lastVerification = null
         isTracing = false
         AssetRegistry.get<Sound>(puzzle.material.abortTracing).play()
     }
@@ -229,6 +246,7 @@ class PuzzleHandler(val puzzle: Puzzle) : Disposable {
                     if (pt.second <= puzzle.lineThickness) {
                         isTracing = true
                         puzzle.currentTrace = puzzle.Trace(pt.first)
+                        puzzle.lastVerification = null
                         AssetRegistry.get<Sound>(puzzle.material.startTracing).play(0.9f, MathUtils.random(0.975f, 1.025f), 0f)
                         println("Started trace")
                     }
@@ -242,9 +260,9 @@ class PuzzleHandler(val puzzle: Puzzle) : Disposable {
                         isTracing = false
                         trace.mutableTraceColor.set(puzzle.traceDoneColor)
                         // FIXME better validation
-                        val verifier = PuzzleVerifier(puzzle, trace)
-                        verifier.validate()
-                        AssetRegistry.get<Sound>(if (verifier.isValid) puzzle.material.success else puzzle.material.failure).play()
+                        val verification = PuzzleVerification(puzzle, trace)
+                        puzzle.lastVerification = verification
+                        AssetRegistry.get<Sound>(if (verification.isValid) puzzle.material.success else puzzle.material.failure).play()
                     } else {
                         cancelTrace()
                     }
@@ -264,6 +282,10 @@ class PuzzleHandler(val puzzle: Puzzle) : Disposable {
 
             val intendedDir: Puzzle.TraceDirection = when {
                 deltaX == 0f && deltaY == 0f -> return
+                deltaX < 0f && abs(deltaX) >= abs(deltaY) * 2f -> Puzzle.TraceDirection.LEFT
+                deltaX > 0f && abs(deltaX) >= abs(deltaY) * 2f -> Puzzle.TraceDirection.RIGHT
+                deltaY > 0f && abs(deltaY) >= abs(deltaX) * 2f -> Puzzle.TraceDirection.UP
+                deltaY < 0f && abs(deltaY) >= abs(deltaX) * 2f -> Puzzle.TraceDirection.DOWN
                 deltaX < 0f && abs(deltaX) >= abs(deltaY) -> Puzzle.TraceDirection.LEFT
                 deltaX >= 0f && abs(deltaX) >= abs(deltaY) -> Puzzle.TraceDirection.RIGHT
                 deltaY >= 0f && abs(deltaY) >= abs(deltaX) -> Puzzle.TraceDirection.UP
@@ -339,10 +361,12 @@ class PuzzleHandler(val puzzle: Puzzle) : Disposable {
                 // If intendedDir is perpendicular, AND we are within a threshold of the intersection,
                 // then go in the direction of the nearest intersection.
                 // Otherwise, go in the intended direction.
-                val intersectionThreshold = line * 2f
+                val intersectionThreshold = line * 2.5f
                 val withinIxnThreshold = trace.progress < intersectionThreshold || (trace.maxProgress - trace.progress) < intersectionThreshold
-                val realDirection: Puzzle.TraceDirection = if (withinIxnThreshold && intendedDir.isPerpendicularTo(axis) && trace.maxProgress > 0f) {
-                    if (trace.progress / trace.maxProgress >= 0.5f) trace.progressDir else trace.progressDir.negative
+                val realDirection: Puzzle.TraceDirection = if (intendedDir.isPerpendicularTo(axis) && trace.maxProgress > 0f) {
+                    if (!withinIxnThreshold) {
+                        break
+                    } else (if (trace.progress / trace.maxProgress >= 0.5f) trace.progressDir else trace.progressDir.negative)
                 } else intendedDir
                 val isRetracting = realDirection.isNegativeTo(axis)
                 if (isRetracting) {

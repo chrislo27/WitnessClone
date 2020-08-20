@@ -65,13 +65,13 @@ class TestPuzzleScreen(main: WitnessApp) : ToolboksScreen<WitnessApp, TestPuzzle
         Gdx.gl.glClearColor(0f, 0f, 0f, 1f)
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT)
 
-        val bufSize = 600f
+        val bufSize = 700f
         val panelMouseX = (camera.getInputX() - (640f - bufSize / 2f)) / bufSize
         val panelMouseY = (camera.getInputY() - (360f - bufSize / 2f)) / bufSize
         if (handler.isTracing) {
             if (Gdx.input.isCursorCatched) {
-                val dx = Gdx.input.deltaX * 4f
-                val dy = -1 * Gdx.input.deltaY * 4f
+                val dx = Gdx.input.deltaX * 3.5f
+                val dy = -1 * Gdx.input.deltaY * 3.5f
                 while (deltas.size < 4)
                     deltas.add(0f)
                 deltas.add(dx)

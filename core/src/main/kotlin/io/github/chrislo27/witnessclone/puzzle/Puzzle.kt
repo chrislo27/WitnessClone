@@ -28,6 +28,7 @@ class Puzzle(val width: Int, val height: Int,
     var gapY = 1f
 
     var currentTrace: Trace? = null
+    var lastVerification: PuzzleVerification? = null
 
     init {
         layout()
